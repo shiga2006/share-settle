@@ -1,0 +1,1 @@
+CREATE POLICY "Creator can view their group" ON public.groups FOR SELECT USING (auth.uid() = created_by);
