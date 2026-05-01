@@ -84,22 +84,32 @@ export default function GroupDetail() {
   async function loadMembers() {
     const { data } = await supabase
       .from('group_members')
-      .select('user_id, profiles:user_id(display_name, email)')
+      .select('user_id')
       .eq('group_id', id!);
-    if (data) {
-      const mapped = data.map((d: any) => ({
-        user_id: d.user_id,
-        display_name: d.profiles?.display_name || 'Unknown',
-        email: d.profiles?.email || null,
+    if (data && data.length > 0) {
+      const userIds = data.map((d: any) => d.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', userIds);
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      setMembers(data.map((d: any) => {
+        const p: any = profileMap.get(d.user_id);
+        return {
+          user_id: d.user_id,
+          display_name: p?.display_name || 'Unknown',
+          email: p?.email || null,
+        };
       }));
-      setMembers(mapped);
+    } else {
+      setMembers([]);
     }
   }
 
   async function loadExpenses() {
     const { data: expData } = await supabase
       .from('expenses')
-      .select('*, expense_splits(*), profiles:paid_by(display_name)')
+      .select('*, expense_splits(*)')
       .eq('group_id', id!)
       .order('created_at', { ascending: false });
 
