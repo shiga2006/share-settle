@@ -119,6 +119,15 @@ export default function GroupDetail() {
       .eq('group_id', id!);
 
     if (expData) {
+      const payerIds = Array.from(new Set(expData.map((e: any) => e.paid_by)));
+      let payerMap = new Map<string, string>();
+      if (payerIds.length > 0) {
+        const { data: payerProfiles } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', payerIds);
+        payerMap = new Map((payerProfiles || []).map((p: any) => [p.id, p.display_name]));
+      }
       setExpenses(expData.map((e: any) => ({
         id: e.id,
         description: e.description,
@@ -126,7 +135,7 @@ export default function GroupDetail() {
         paid_by: e.paid_by,
         split_type: e.split_type,
         created_at: e.created_at,
-        payer_name: e.profiles?.display_name || 'Unknown',
+        payer_name: payerMap.get(e.paid_by) || 'Unknown',
       })));
 
       // Calculate balances
