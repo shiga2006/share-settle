@@ -217,7 +217,7 @@ export default function Dashboard() {
                   <div>
                     <p className="font-medium">{expense.description}</p>
                     <p className="text-sm text-muted-foreground">
-                      Paid by {expense.profiles?.display_name || 'Unknown'} · {new Date(expense.created_at).toLocaleDateString()}
+                      Paid by {expense.payer_name || 'Unknown'} · {new Date(expense.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <span className="font-heading font-bold">${Number(expense.amount).toFixed(2)}</span>
