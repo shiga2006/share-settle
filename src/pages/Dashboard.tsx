@@ -31,11 +31,25 @@ export default function Dashboard() {
     setLoading(true);
     const [groupsRes, expensesRes] = await Promise.all([
       supabase.from('groups').select('*').order('created_at', { ascending: false }),
-      supabase.from('expenses').select('*, expense_splits(*), profiles:paid_by(display_name)').order('created_at', { ascending: false }).limit(10),
+      supabase.from('expenses').select('*, expense_splits(*)').order('created_at', { ascending: false }).limit(10),
     ]);
 
     if (groupsRes.data) setGroups(groupsRes.data);
-    if (expensesRes.data) setRecentExpenses(expensesRes.data);
+    if (expensesRes.data) {
+      const payerIds = Array.from(new Set(expensesRes.data.map((e: any) => e.paid_by)));
+      let payerMap = new Map<string, string>();
+      if (payerIds.length > 0) {
+        const { data: payerProfiles } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', payerIds);
+        payerMap = new Map((payerProfiles || []).map((p: any) => [p.id, p.display_name]));
+      }
+      setRecentExpenses(expensesRes.data.map((e: any) => ({
+        ...e,
+        payer_name: payerMap.get(e.paid_by) || 'Unknown',
+      })));
+    }
 
     // Calculate balances across all groups
     await calculateBalances();
